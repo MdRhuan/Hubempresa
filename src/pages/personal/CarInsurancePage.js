@@ -21,9 +21,11 @@ function CarInsurancePage() {
 
   const COBERTURAS = ['Compreensiva', 'Colisão', 'Básica (RCF)', 'Contra Terceiros', 'Roubo/Furto'];
 
-  useEffect(() => {
+  const load = useCallback(() => {
     db.config.get(CI_KEY).then(rec => setSeguros(rec?.value || CI_DEFAULTS));
   }, []);
+  useEffect(() => { load(); }, []);
+  useRealtimeRefresh(null, load);
 
   async function save() {
     if (!form.seguradora?.trim()) { toast('Seguradora obrigatória.', 'error'); return; }

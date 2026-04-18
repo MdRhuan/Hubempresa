@@ -50,6 +50,7 @@ function FixedExpensesPage() {
     setDespesas(cfg?.value || DEFAULT_DESPESAS);
   }, []);
   useEffect(() => { load(); }, []);
+  useRealtimeRefresh(null, load);
 
   // ── Calcular totais ──────────────────────────────────────
   const toUSD = (val, moeda) => moeda === 'BRL' ? val / USD_TO_BRL : val;

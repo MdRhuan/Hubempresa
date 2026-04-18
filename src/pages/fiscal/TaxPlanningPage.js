@@ -24,6 +24,7 @@ function TaxPlanningPage() {
     setRows(all.filter(r => r.subcategoria === 'Tax Planning (US)' || r.subcategoria === 'Tax Planning (BR)'));
   }, []);
   useEffect(() => { load(); }, []);
+  useRealtimeRefresh(null, load);
 
   const filtered = rows.filter(r =>
     (!filterSub || r.subcategoria === filterSub) &&

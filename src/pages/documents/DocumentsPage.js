@@ -21,6 +21,7 @@ function DocumentsPage() {
     setRows(d); setEmpresas(e);
   }, []);
   useEffect(() => { load(); }, []);
+  useRealtimeRefresh(null, load);
 
   const empName = id => empresas.find(e=>e.id===id)?.nome || '—';
   const STATUS_DOC = ['Atual','Pendente Upload','Desatualizado','Substituído','Arquivado'];

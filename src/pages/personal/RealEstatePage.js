@@ -21,6 +21,7 @@ function RealEstatePage() {
     setImoveis(cfgIm?.value || DEFAULT_IMOVEIS_LOCAL);
   }, []);
   useEffect(() => { load(); }, []);
+  useRealtimeRefresh(null, load);
 
   function alertColor(venc) {
     if (!venc) return null;

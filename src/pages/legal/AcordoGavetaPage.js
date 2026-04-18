@@ -42,6 +42,7 @@ function AcordoGavetaPage() {
   }, []);
 
   useEffect(() => { load(); }, []);
+  useRealtimeRefresh(null, load);
 
   const filtered = rows.filter(r =>
     (!filterStatus || r.status === filterStatus) &&

@@ -22,9 +22,11 @@ function AptInsurancePage() {
   const TIPOS_IMOVEL = ['Apartamento', 'Casa', 'Condomínio', 'Cobertura', 'Flat', 'Comercial'];
   const PAISES = [{ value:'BR', label:'🇧🇷 Brasil' }, { value:'US', label:'🇺🇸 EUA' }];
 
-  useEffect(() => {
+  const load = useCallback(() => {
     db.config.get(AI_KEY).then(rec => setSeguros(rec?.value || AI_DEFAULTS));
   }, []);
+  useEffect(() => { load(); }, []);
+  useRealtimeRefresh(null, load);
 
   async function save() {
     if (!form.seguradora?.trim()) { toast('Seguradora obrigatória.', 'error'); return; }

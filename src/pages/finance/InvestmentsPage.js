@@ -32,6 +32,7 @@ function InvestmentsPage() {
     setAtivos(cfg?.value || DEFAULT_ATIVOS);
   }, []);
   useEffect(() => { load(); }, []);
+  useRealtimeRefresh(null, load);
 
   // Build charts after data loads
   useEffect(() => {

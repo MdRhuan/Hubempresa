@@ -16,6 +16,7 @@ function CheckBoxPage() {
     setRows(all.filter(r => r.subcategoria === 'Check-the-Box Elections'));
   }, []);
   useEffect(() => { load(); }, []);
+  useRealtimeRefresh(null, load);
 
   const filtered = rows.filter(r =>
     (!filterAno || String(r.ano) === filterAno) &&

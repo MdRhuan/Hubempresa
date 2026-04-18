@@ -26,6 +26,7 @@ function JuridicoPage() {
     setRows(all.filter(r => SUBCATS.some(s => s.key === r.subcategoria)));
   }, []);
   useEffect(() => { load(); }, []);
+  useRealtimeRefresh(null, load);
 
   const filtered = rows.filter(r =>
     (!filterSub || r.subcategoria === filterSub) &&

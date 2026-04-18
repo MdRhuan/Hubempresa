@@ -273,6 +273,7 @@ function TrademarksPage() {
   }
 
   React.useEffect(() => { load(); }, []);
+  useRealtimeRefresh(null, load);
 
   // ── Deadline helpers ──────────────────────────────────────
   function daysUntil(dateStr) {

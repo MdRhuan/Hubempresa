@@ -76,7 +76,6 @@ function rowsToCamel(rows) {
 // ── Tabela genérica ────────────────────────────────────────────
 function makeTable(tableName) {
   return {
-    // Retorna todos os registros do usuário atual
     async toArray() {
       const sb = getSupabase();
       const { data, error } = await sb.from(tableName).select('*').order('id', { ascending: true });
@@ -84,12 +83,9 @@ function makeTable(tableName) {
       return rowsToCamel(data);
     },
 
-    // Insere e retorna o id gerado
     async add(obj) {
       const sb = getSupabase();
-      const { data: { user } } = await sb.auth.getUser();
-      const row = { ...toSnake(obj), owner_id: user.id };
-      // Remove campos undefined e id (auto-gerado)
+      const row = { ...toSnake(obj) };
       delete row.id;
       Object.keys(row).forEach(k => row[k] === undefined && delete row[k]);
       const { data, error } = await sb.from(tableName).insert(row).select('id').single();
@@ -97,7 +93,6 @@ function makeTable(tableName) {
       return data.id;
     },
 
-    // Atualiza campos de um registro pelo id
     async update(id, obj) {
       const sb = getSupabase();
       const row = toSnake(obj);
@@ -109,14 +104,12 @@ function makeTable(tableName) {
       return id;
     },
 
-    // Deleta pelo id
     async delete(id) {
       const sb = getSupabase();
       const { error } = await sb.from(tableName).delete().eq('id', id);
       if (error) { console.error(tableName + '.delete()', error); throw error; }
     },
 
-    // Retorna um registro pelo id
     async get(id) {
       const sb = getSupabase();
       const { data, error } = await sb.from(tableName).select('*').eq('id', id).maybeSingle();
@@ -124,13 +117,11 @@ function makeTable(tableName) {
       return data ? toCamel(data) : null;
     },
 
-    // Suporte a bulkAdd (usado no backup/restore)
     async bulkAdd(arr) {
       if (!arr || arr.length === 0) return;
       const sb = getSupabase();
-      const { data: { user } } = await sb.auth.getUser();
       const rows = arr.map(obj => {
-        const row = { ...toSnake(obj), owner_id: user.id };
+        const row = { ...toSnake(obj) };
         delete row.id;
         Object.keys(row).forEach(k => row[k] === undefined && delete row[k]);
         return row;
@@ -139,15 +130,12 @@ function makeTable(tableName) {
       if (error) { console.error(tableName + '.bulkAdd()', error); throw error; }
     },
 
-    // Apaga todos os registros do usuário (usado no backup/restore)
     async clear() {
       const sb = getSupabase();
-      const { data: { user } } = await sb.auth.getUser();
-      const { error } = await sb.from(tableName).delete().eq('owner_id', user.id);
+      const { error } = await sb.from(tableName).delete().neq('id', 0);
       if (error) { console.error(tableName + '.clear()', error); throw error; }
     },
 
-    // Suporte a .orderBy().reverse().limit().toArray() (auditLog)
     orderBy(field) {
       return {
         reverse() {
@@ -169,14 +157,12 @@ function makeTable(tableName) {
       };
     },
 
-    // Suporte a .where('campo').equals(valor).toArray()
     where(field) {
       return {
         equals(val) {
           return {
             async toArray() {
               const sb = getSupabase();
-              const col = Object.keys(toSnake({ [field]: null }))[0] || field;
               const snakeField = toSnake({ [field]: '_' });
               const actualCol = Object.keys(snakeField)[0];
               const { data, error } = await sb.from(tableName)
@@ -196,11 +182,9 @@ function makeTable(tableName) {
       };
     },
 
-    // put = upsert (compatibilidade Dexie)
     async put(obj) {
       const sb = getSupabase();
-      const { data: { user } } = await sb.auth.getUser();
-      const row = { ...toSnake(obj), owner_id: user.id };
+      const row = { ...toSnake(obj) };
       Object.keys(row).forEach(k => row[k] === undefined && delete row[k]);
       const { error } = await sb.from(tableName).upsert(row);
       if (error) { console.error(tableName + '.put()', error); throw error; }
@@ -208,7 +192,7 @@ function makeTable(tableName) {
   };
 }
 
-// ── Tabela config especial (chave/valor) ──────────────────────
+// ── Tabela config especial (chave/valor, compartilhada) ───────
 const configTable = {
   async get(chave) {
     const sb = getSupabase();
@@ -220,9 +204,8 @@ const configTable = {
 
   async put({ chave, value }) {
     const sb = getSupabase();
-    const { data: { user } } = await sb.auth.getUser();
     const { error } = await sb.from('config')
-      .upsert({ owner_id: user.id, chave, value }, { onConflict: 'owner_id,chave' });
+      .upsert({ chave, value }, { onConflict: 'chave' });
     if (error) { console.error('config.put()', error); throw error; }
   },
 
@@ -235,16 +218,14 @@ const configTable = {
 
   async clear() {
     const sb = getSupabase();
-    const { data: { user } } = await sb.auth.getUser();
-    const { error } = await sb.from('config').delete().eq('owner_id', user.id);
+    const { error } = await sb.from('config').delete().neq('chave', '');
     if (error) { console.error('config.clear()', error); throw error; }
   },
 
   async bulkAdd(arr) {
     if (!arr || arr.length === 0) return;
     const sb = getSupabase();
-    const { data: { user } } = await sb.auth.getUser();
-    const rows = arr.map(r => ({ owner_id: user.id, chave: r.chave, value: r.value }));
+    const rows = arr.map(r => ({ chave: r.chave, value: r.value }));
     const { error } = await sb.from('config').insert(rows);
     if (error) { console.error('config.bulkAdd()', error); throw error; }
   },
@@ -266,5 +247,41 @@ var db = {
   trademarks:   makeTable('trademarks'),
   config:       configTable,
 };
+
+// ── Realtime: escuta todas as tabelas e dispara evento global ─
+const REALTIME_TABLES = [
+  'empresas', 'funcionarios', 'documentos', 'transacoes',
+  'org_nodes', 'org_texts', 'audit_log', 'tasks', 'alertas',
+  'docs_pessoais', 'fiscal_docs', 'trademarks', 'config',
+];
+
+function initRealtime() {
+  const sb = getSupabase();
+  REALTIME_TABLES.forEach(table => {
+    sb.channel('realtime:' + table)
+      .on('postgres_changes', { event: '*', schema: 'public', table }, payload => {
+        window.dispatchEvent(new CustomEvent('db:change', { detail: { table, payload } }));
+      })
+      .subscribe();
+  });
+}
+
+// Inicia após o Supabase estar disponível
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initRealtime);
+} else {
+  initRealtime();
+}
+
+// Hook React para recarregar dados quando qualquer tabela mudar
+function useRealtimeRefresh(tables, callback) {
+  React.useEffect(() => {
+    function handler(e) {
+      if (!tables || tables.includes(e.detail.table)) callback();
+    }
+    window.addEventListener('db:change', handler);
+    return () => window.removeEventListener('db:change', handler);
+  }, []);
+}
 
 async function seedTasksAndAlerts() {}

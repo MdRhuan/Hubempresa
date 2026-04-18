@@ -32,6 +32,7 @@ function TasksPage() {
     setRows(tk); setEmpresas(emp);
   }, []);
   useEffect(() => { load(); }, []);
+  useRealtimeRefresh(null, load);
 
   const today = new Date().toISOString().slice(0,10);
   const in7   = new Date(Date.now() + 7*86400000).toISOString().slice(0,10);

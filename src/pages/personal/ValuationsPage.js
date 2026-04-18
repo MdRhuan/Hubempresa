@@ -18,6 +18,7 @@ function ValuationsPage() {
     setValuations(cfgVa?.value || DEFAULT_VALUATIONS_LOCAL);
   }, []);
   useEffect(() => { load(); }, []);
+  useRealtimeRefresh(null, load);
 
   function download(r) {
     if (!r.conteudo) { toast('Arquivo não disponível.','error'); return; }

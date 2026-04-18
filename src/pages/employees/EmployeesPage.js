@@ -14,6 +14,7 @@ function EmployeesPage() {
     setRows(f); setEmpresas(e);
   }, []);
   useEffect(() => { load(); }, []);
+  useRealtimeRefresh(null, load);
 
   const [showArchivedEmp, setShowArchivedEmp] = useState(false);
   const empName = id => empresas.find(e=>e.id===id)?.nome || '—';

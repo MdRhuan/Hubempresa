@@ -27,6 +27,7 @@ function FiscalTaxPage() {
     setRows(await db.fiscalDocs.toArray());
   }, []);
   useEffect(() => { load(); }, []);
+  useRealtimeRefresh(null, load);
 
   const filtered = rows.filter(r =>
     (!filterSub || r.subcategoria === filterSub) &&

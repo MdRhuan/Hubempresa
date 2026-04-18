@@ -21,9 +21,11 @@ function LifeInsurancePage() {
 
   const MODALIDADES = ['Vida Inteira', 'Temporário', 'Universal', 'Resgatável', 'Grupo'];
 
-  useEffect(() => {
+  const load = useCallback(() => {
     db.config.get(LI_KEY).then(rec => setSeguros(rec?.value || LI_DEFAULTS));
   }, []);
+  useEffect(() => { load(); }, []);
+  useRealtimeRefresh(null, load);
 
   async function save() {
     if (!form.seguradora?.trim()) { toast('Seguradora obrigatória.', 'error'); return; }

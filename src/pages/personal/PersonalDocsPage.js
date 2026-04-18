@@ -561,6 +561,7 @@ function PersonalDocsPage() {
     setPessoas(pessoasComMigration);
   }, []);
   useEffect(() => { load(); }, []);
+  useRealtimeRefresh(null, load);
 
   async function savePessoas(list) {
     await db.config.put({ chave:'pessoas', value: list });
